@@ -15,13 +15,13 @@ Run this nightly to grow and refresh a collection of great playlists.
 search filters exist only to help you *find candidates* and *see what exists*.
 The decision — which specific tracks belong, in what mix — is always yours.
 
-### The lesson (why this rule exists)
+### Why this rule exists
 
-An earlier version selected tracks by substring-matching genre tags. It put Paul
-McCartney's 1971 album *Ram* into a teen-pop playlist, because *Ram* is tagged
-`Classic Uk Pop` and the string `k pop` appears inside "u**k pop**". A filter
-cannot tell *Ram* from a K-pop single; you can. Never outsource taste to a
-string match.
+An earlier version selected tracks by substring-matching genre tags, and produced
+nonsense: one genre name occurs inside another as a substring, tags are applied
+inconsistently, and a tag describes a record only loosely at best. A string match
+cannot hear the difference between two records that share a tag fragment; you can.
+Never outsource taste to a string match.
 
 ---
 
@@ -72,8 +72,8 @@ curl -s "${JELLYFIN_URL:-http://localhost:8096}/Items?userId=${USER_ID}&includeI
 
 ```bash
 # 1. Resolve "Artist - Title" to an ID via search API
-ARTIST="Neil Young"
-TITLE="Harvest Moon"
+ARTIST="<artist you picked>"
+TITLE="<track you picked>"
 ID=$(curl -s "${JELLYFIN_URL:-http://localhost:8096}/Items?userId=${USER_ID}&includeItemTypes=Audio&recursive=true&searchTerm=$(printf '%s' "${ARTIST} ${TITLE}" | jq -sR @uri)&limit=20" \
   -H "Authorization: MediaBrowser Token=\"${JELLYFIN_TOKEN}\"" | jq -r '.Items[0].Id')
 
@@ -192,22 +192,22 @@ for angles with *character*:
 - **Activities** — Deep Focus (instrumental), Kitchen Dancing, Long Drive, Dinner Party.
 - **Scenes & eras with a point of view** — 90s Alternative & Grunge, 2000s Indie
   Revival, Indie Sleaze, Britpop, Desert & Garage Rock.
-- **Artist-hub / "the world around X"** — Cosmic Americana (Neil Young & kin),
-  the Radiohead universe. (Keep even these varied — the anchor shouldn't be half
-  the playlist.)
-- **Cross-genre vibes** — a curated artist mix that ignores genre lines (e.g.
-  "Kids Bangers": Taylor Swift + Charli XCX + BLACKPINK + hyperpop).
+- **Artist-hub / "the world around one anchor"** — an artist plus their peers,
+  collaborators and descendants. (Keep even these varied — the anchor shouldn't be
+  half the playlist.)
+- **Cross-genre vibes** — a mix bound by feel rather than genre lines: pop, hyperpop
+  and hip-hop side by side because they hit the same way.
 - **Editorial / web-informed** (see below) — anniversaries, biopics, a producer,
   an artist trending from a film.
 - **Fresh Finds** — recently-added music.
 
 ### Web-informed editorial curation
 
-You have web access. Use it to make playlists *timely*: if a Michael Jackson
-biopic is in cinemas, research it and build a Motown/soul set from the relevant
-artists in the library; for a 30th-anniversary album, build an era spotlight.
-The web supplies the *hook*; the tracks must exist in the library — translate
-the hook into real picks, never invent tracks.
+You have web access. Use it to make playlists *timely*: a music biopic in cinemas
+becomes a set drawn from that era and scene; an album's anniversary becomes an era
+spotlight; a festival lineup becomes a sampler of the acts the library holds. The
+web supplies the *hook*; the tracks must exist in the library — translate the hook
+into real picks, never invent tracks.
 
 ---
 
