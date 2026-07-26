@@ -8,6 +8,30 @@ plugin handles everything else — reading the library, writing the playlists, a
 running on a schedule. It is not a smart-playlist generator: there are no genre rules
 or automatic selection filters.
 
+It is designed to run unattended overnight: leave the scheduled task enabled and each
+morning the library has a new playlist in it, built on a fresh idea, plus a refreshed
+selection of whatever you added recently. Curating one playlist takes a while — the
+model is asked about a thousand candidate tracks in batches — which is exactly why it
+belongs at 3am rather than in front of you.
+
+## What it comes up with
+
+The model is asked for an idea the library can actually support — not a genre bucket.
+In practice it reaches for moods and times of day, activities, scenes and eras with a
+point of view, the world around one anchor artist, mixes bound by feel rather than
+genre, and timely editorial hooks such as an anniversary or a film. Year buckets
+("Class of 2008", "Class of 2009") are explicitly discouraged.
+
+A real example, produced by a 35B model against an 18,000-track library:
+
+> **The Alchemist's Desk** — pop and rock records where studio production, tape
+> manipulation and sonic layering serve as the primary compositional force.
+
+That is the difference from a rule-based smart playlist: "records where production is
+the composition" is not something you can express as a filter over genre tags and
+years, but a model can recognise it track by track. The description is written into the
+playlist's overview in Jellyfin, so each playlist explains its own premise.
+
 ## Requirements
 
 - Jellyfin 10.11 or newer
@@ -82,8 +106,17 @@ modified. The tag lives in Jellyfin, so no local state file is needed.
 Remaining settings — temperature, context size, timeouts, candidate batch sizes and
 retry counts — are documented on the settings page.
 
-The scheduled run is **Dashboard → Scheduled Tasks → AutoPlaylist → Curate playlists**,
-daily at 03:15 by default.
+## Scheduled runs
+
+The plugin installs a task at **Dashboard → Scheduled Tasks → AutoPlaylist → Curate
+playlists**, set to 03:15 daily. Each run adds *New playlists per run* playlists and
+rebuilds the recently-added one, so the collection grows by one idea a night without
+you doing anything.
+
+Raise *New playlists per run* to build a starting collection faster, and set *Stop
+after this many playlists* if you want it to fill up to a fixed size and then leave the
+library alone. A run can also be started by hand with **Curate now** on the settings
+page, which streams the same activity log the scheduled run writes.
 
 ## Building
 
