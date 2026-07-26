@@ -60,8 +60,7 @@ public static class CurationPrompts
     /// The description used for the continuously refreshed recently-added playlist.
     /// </summary>
     public const string FreshFindsDescription =
-        "A curated cross-section of the music most recently added to the library — " +
-        "not a mood, the binding idea is recency.";
+        "A curated selection from the music most recently added to the library, rebuilt on every run.";
 
     /// <summary>
     /// Builds the system prompt shared by every call in a run.

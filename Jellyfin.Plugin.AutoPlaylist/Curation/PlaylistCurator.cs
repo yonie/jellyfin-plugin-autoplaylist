@@ -412,65 +412,80 @@ public sealed class PlaylistCurator
                 continue;
             }
 
-            var children = playlist.GetLinkedChildren();
-            if (children.Count < 5)
+            if (await DescribeOneAsync(playlist, system, cancellationToken).ConfigureAwait(false))
             {
-                continue;
-            }
-
-            // An even sample across the playlist, so the description reflects the whole
-            // thing rather than whatever happens to be at the top.
-            var step = Math.Max(1, children.Count / 40);
-            var lines = new List<string>(40);
-            for (var i = 0; i < children.Count && lines.Count < 40; i += step)
-            {
-                if (children[i] is Audio audio)
-                {
-                    var artist = audio.Artists is { Count: > 0 } ? audio.Artists[0] : "Unknown";
-                    lines.Add(string.Format(
-                        CultureInfo.InvariantCulture,
-                        "{0} — {1} [{2}{3}]",
-                        artist,
-                        audio.Name,
-                        audio.ProductionYear?.ToString(CultureInfo.InvariantCulture) ?? "?",
-                        audio.Genres is { Length: > 0 } ? ", " + audio.Genres[0] : string.Empty));
-                }
-            }
-
-            if (lines.Count < 5)
-            {
-                continue;
-            }
-
-            _runLog.Step = "describing " + playlist.Name;
-            try
-            {
-                var reply = await _ollama.ChatJsonAsync<DescriptionResponse>(
-                    system,
-                    CurationPrompts.DescriptionPrompt(playlist.Name, string.Join('\n', lines)),
-                    CurationPrompts.DescriptionSchema,
-                    cancellationToken).ConfigureAwait(false);
-
-                var description = (reply.Description ?? string.Empty).Trim();
-                if (description.Length == 0)
-                {
-                    continue;
-                }
-
-                playlist.Overview = description;
-                await playlist.UpdateToRepositoryAsync(ItemUpdateType.MetadataEdit, cancellationToken)
-                    .ConfigureAwait(false);
                 written++;
-                Log("described \"" + playlist.Name + "\": " + description);
-            }
-            catch (OllamaException ex)
-            {
-                Log("could not describe \"" + playlist.Name + "\": " + ex.Message);
             }
         }
 
         Log(string.Format(CultureInfo.InvariantCulture, "wrote {0} description(s)", written));
         return written;
+    }
+
+    /// <summary>
+    /// Describes one playlist from a sample of what is actually on it.
+    /// </summary>
+    private async Task<bool> DescribeOneAsync(
+        Playlist playlist,
+        string system,
+        CancellationToken cancellationToken)
+    {
+        var children = playlist.GetLinkedChildren();
+        if (children.Count < 5)
+        {
+            return false;
+        }
+
+        // An even sample across the playlist, so the description reflects the whole
+        // thing rather than whatever happens to be at the top.
+        var step = Math.Max(1, children.Count / 40);
+        var lines = new List<string>(40);
+        for (var i = 0; i < children.Count && lines.Count < 40; i += step)
+        {
+            if (children[i] is Audio audio)
+            {
+                var artist = audio.Artists is { Count: > 0 } ? audio.Artists[0] : "Unknown";
+                lines.Add(string.Format(
+                    CultureInfo.InvariantCulture,
+                    "{0} — {1} [{2}{3}]",
+                    artist,
+                    audio.Name,
+                    audio.ProductionYear?.ToString(CultureInfo.InvariantCulture) ?? "?",
+                    audio.Genres is { Length: > 0 } ? ", " + audio.Genres[0] : string.Empty));
+            }
+        }
+
+        if (lines.Count < 5)
+        {
+            return false;
+        }
+
+        _runLog.Step = "describing " + playlist.Name;
+        try
+        {
+            var reply = await _ollama.ChatJsonAsync<DescriptionResponse>(
+                system,
+                CurationPrompts.DescriptionPrompt(playlist.Name, string.Join('\n', lines)),
+                CurationPrompts.DescriptionSchema,
+                cancellationToken).ConfigureAwait(false);
+
+            var description = (reply.Description ?? string.Empty).Trim();
+            if (description.Length == 0)
+            {
+                return false;
+            }
+
+            playlist.Overview = description;
+            await playlist.UpdateToRepositoryAsync(ItemUpdateType.MetadataEdit, cancellationToken)
+                .ConfigureAwait(false);
+            Log("described \"" + playlist.Name + "\": " + description);
+            return true;
+        }
+        catch (OllamaException ex)
+        {
+            Log("could not describe \"" + playlist.Name + "\": " + ex.Message);
+            return false;
+        }
     }
 
     private async Task CurateThemedAsync(
@@ -655,6 +670,7 @@ public sealed class PlaylistCurator
             Ids = ids
         }).ConfigureAwait(false);
 
+        // Recency needs no written description — the playlist is what it says it is.
         await TagAsync(existing.Id, CurationPrompts.FreshFindsDescription, config, cancellationToken)
             .ConfigureAwait(false);
         Log(string.Format(
