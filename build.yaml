@@ -1,0 +1,19 @@
+---
+name: "AutoPlaylist"
+guid: "56bd1236-bb86-47e0-863d-e5a5fe12935b"
+version: "1.0.0.0"
+targetAbi: "10.11.0.0"
+framework: "net9.0"
+overview: "LLM-curated music playlists, built from your own library"
+description: >
+  AutoPlaylist turns your Jellyfin music library into a growing set of thematic,
+  hand-curated playlists. A local LLM served by Ollama looks at what your library
+  actually holds, chooses an angle, then picks every track by musical judgment —
+  no genre-filter automation. Playlists it owns are marked with a tag, so your own
+  playlists are never touched. Runs nightly as a scheduled task.
+category: "General"
+owner: "yonie"
+artifacts:
+  - "Jellyfin.Plugin.AutoPlaylist.dll"
+changelog: >
+  First release.

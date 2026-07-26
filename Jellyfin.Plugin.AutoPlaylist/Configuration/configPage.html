@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>AutoPlaylist</title>
+</head>
+<body>
+<div id="AutoPlaylistConfigPage" data-role="page" class="page type-interior pluginConfigurationPage"
+     data-require="emby-input,emby-button,emby-select,emby-checkbox,emby-textarea,emby-collapse">
+    <div data-role="content">
+        <div class="content-primary">
+
+            <form id="AutoPlaylistConfigForm">
+
+                <div class="verticalSection">
+                    <h2 class="sectionTitle">Ollama</h2>
+                    <div class="fieldDescription" style="margin-bottom:1em;">
+                        AutoPlaylist sends your library's artist and track names to this server so the
+                        model can choose what belongs on a playlist. Nothing is sent anywhere else, and
+                        the plugin never reads your own playlists. If the URL points at a cloud-hosted
+                        model, those prompts leave your machine.
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="OllamaUrl">Ollama server URL</label>
+                        <input id="OllamaUrl" name="OllamaUrl" type="text" is="emby-input"/>
+                        <div class="fieldDescription">For example <code>http://localhost:11434</code>.</div>
+                    </div>
+
+                    <div style="margin-bottom:1em;">
+                        <button is="emby-button" type="button" id="LoadModels" class="raised button-cancel block emby-button">
+                            <span>Test connection &amp; load models</span>
+                        </button>
+                        <div class="fieldDescription" id="ConnectionResult"></div>
+                    </div>
+
+                    <div class="selectContainer">
+                        <label class="selectLabel" for="Model">Model</label>
+                        <select is="emby-select" id="Model" name="Model" class="emby-select-withcolor emby-select"></select>
+                        <div class="fieldDescription">
+                            Any instruct model works. Bigger models curate noticeably better; the plugin
+                            asks for JSON and tolerates models that wrap it in prose.
+                        </div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="Temperature">Temperature</label>
+                        <input id="Temperature" name="Temperature" type="number" is="emby-input" step="0.05" min="0" max="2"/>
+                        <div class="fieldDescription">Higher is more adventurous. 0.8 is a good default.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="ContextTokens">Context window (tokens)</label>
+                        <input id="ContextTokens" name="ContextTokens" type="number" is="emby-input" min="0"/>
+                        <div class="fieldDescription">0 uses the model default. 8192 or more helps on long candidate batches.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="RequestTimeoutSeconds">Request timeout (seconds)</label>
+                        <input id="RequestTimeoutSeconds" name="RequestTimeoutSeconds" type="number" is="emby-input" min="30"/>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="KeepAlive">Keep model loaded</label>
+                        <input id="KeepAlive" name="KeepAlive" type="text" is="emby-input"/>
+                        <div class="fieldDescription">Passed to Ollama as <code>keep_alive</code>, e.g. <code>10m</code>.</div>
+                    </div>
+
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input id="DisableThinking" name="DisableThinking" type="checkbox" is="emby-checkbox"/>
+                            <span>Disable model thinking</span>
+                        </label>
+                        <div class="fieldDescription">Much faster on reasoning models, at some cost in taste.</div>
+                    </div>
+                </div>
+
+                <div class="verticalSection">
+                    <h2 class="sectionTitle">What to build</h2>
+
+                    <div class="selectContainer">
+                        <label class="selectLabel" for="UserId">Playlist owner</label>
+                        <select is="emby-select" id="UserId" name="UserId" class="emby-select-withcolor emby-select"></select>
+                        <div class="fieldDescription">Playlists are created in this user's library.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="PlaylistsPerRun">New playlists per run</label>
+                        <input id="PlaylistsPerRun" name="PlaylistsPerRun" type="number" is="emby-input" min="0" max="10"/>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="MaxManagedPlaylists">Stop after this many playlists</label>
+                        <input id="MaxManagedPlaylists" name="MaxManagedPlaylists" type="number" is="emby-input" min="0"/>
+                        <div class="fieldDescription">0 means keep going forever.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="TargetTrackCount">Target tracks per playlist</label>
+                        <input id="TargetTrackCount" name="TargetTrackCount" type="number" is="emby-input" min="20"/>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="PlaylistNamePrefix">Name prefix</label>
+                        <input id="PlaylistNamePrefix" name="PlaylistNamePrefix" type="text" is="emby-input"/>
+                        <div class="fieldDescription">Optional, e.g. <code>AI</code> — makes generated playlists easy to spot.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="PlaylistTag">Ownership tag</label>
+                        <input id="PlaylistTag" name="PlaylistTag" type="text" is="emby-input"/>
+                        <div class="fieldDescription">
+                            Playlists carrying this tag are the only ones the plugin will ever rebuild or
+                            delete. Your own playlists are never touched.
+                        </div>
+                    </div>
+
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input id="MakePlaylistsPublic" name="MakePlaylistsPublic" type="checkbox" is="emby-checkbox"/>
+                            <span>Make playlists public</span>
+                        </label>
+                    </div>
+
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input id="MaintainFreshFinds" name="MaintainFreshFinds" type="checkbox" is="emby-checkbox"/>
+                            <span>Maintain a recently-added playlist</span>
+                        </label>
+                        <div class="fieldDescription">Rebuilt on every run from the newest albums in the library.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="FreshFindsName">Recently-added playlist name</label>
+                        <input id="FreshFindsName" name="FreshFindsName" type="text" is="emby-input"/>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="FreshFindsAlbumCount">Albums it draws from</label>
+                        <input id="FreshFindsAlbumCount" name="FreshFindsAlbumCount" type="number" is="emby-input" min="5"/>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="ExtraInstructions">Extra curator instructions</label>
+                        <textarea id="ExtraInstructions" name="ExtraInstructions" is="emby-textarea" rows="4"></textarea>
+                        <div class="fieldDescription">
+                            Appended to the built-in brief — your taste, languages to favour, things to avoid.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="verticalSection">
+                    <h2 class="sectionTitle">Quality bar</h2>
+                    <div class="fieldDescription" style="margin-bottom:1em;">
+                        These are enforced in code after the model has picked, so a model that gets
+                        carried away cannot produce a lopsided playlist.
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="MaxTracksPerArtist">Max tracks per artist</label>
+                        <input id="MaxTracksPerArtist" name="MaxTracksPerArtist" type="number" is="emby-input" min="1"/>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="MaxTracksPerAlbum">Max tracks per album</label>
+                        <input id="MaxTracksPerAlbum" name="MaxTracksPerAlbum" type="number" is="emby-input" min="1"/>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="MinTrackCount">Minimum tracks for a proper playlist</label>
+                        <input id="MinTrackCount" name="MinTrackCount" type="number" is="emby-input" min="5"/>
+                        <div class="fieldDescription">Below this the angle is dropped rather than padded.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="MinArtistCount">Minimum distinct artists</label>
+                        <input id="MinArtistCount" name="MinArtistCount" type="number" is="emby-input" min="2"/>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="MinTrackSeconds">Shortest track (seconds)</label>
+                        <input id="MinTrackSeconds" name="MinTrackSeconds" type="number" is="emby-input" min="0"/>
+                        <div class="fieldDescription">Keeps skits, intros and interludes out.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="MaxTrackSeconds">Longest track (seconds)</label>
+                        <input id="MaxTrackSeconds" name="MaxTrackSeconds" type="number" is="emby-input" min="60"/>
+                    </div>
+
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input id="ExcludeHolidayMusic" name="ExcludeHolidayMusic" type="checkbox" is="emby-checkbox"/>
+                            <span>Exclude holiday music</span>
+                        </label>
+                        <div class="fieldDescription">
+                            Checked in genre, album and title. Skipped when the playlist is itself about it.
+                        </div>
+                    </div>
+
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input id="PreferStudioVersions" name="PreferStudioVersions" type="checkbox" is="emby-checkbox"/>
+                            <span>Collapse live/remix duplicates</span>
+                        </label>
+                        <div class="fieldDescription">Keeps one version of a song, preferring the studio cut.</div>
+                    </div>
+                </div>
+
+                <div class="verticalSection">
+                    <h2 class="sectionTitle">Advanced</h2>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="CandidatesPerRequest">Candidates shown per request</label>
+                        <input id="CandidatesPerRequest" name="CandidatesPerRequest" type="number" is="emby-input" min="20"/>
+                        <div class="fieldDescription">Lower this if your model's context window is small.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="MaxCandidatePool">Candidate pool size</label>
+                        <input id="MaxCandidatePool" name="MaxCandidatePool" type="number" is="emby-input" min="100"/>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="CandidatesPerSeedArtist">Tracks per seed artist</label>
+                        <input id="CandidatesPerSeedArtist" name="CandidatesPerSeedArtist" type="number" is="emby-input" min="1"/>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="MaxArtistsInPrompt">Artists listed in the briefing</label>
+                        <input id="MaxArtistsInPrompt" name="MaxArtistsInPrompt" type="number" is="emby-input" min="20"/>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="AngleAttempts">Angle attempts per playlist</label>
+                        <input id="AngleAttempts" name="AngleAttempts" type="number" is="emby-input" min="1" max="10"/>
+                        <div class="fieldDescription">How many ideas to try before giving up on a run.</div>
+                    </div>
+
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input id="VerboseLogging" name="VerboseLogging" type="checkbox" is="emby-checkbox"/>
+                            <span>Log every prompt and reply</span>
+                        </label>
+                        <div class="fieldDescription">Useful when a model misbehaves. Noisy.</div>
+                    </div>
+                </div>
+
+                <div>
+                    <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                        <span>Save</span>
+                    </button>
+                </div>
+            </form>
+
+            <div class="verticalSection">
+                <h2 class="sectionTitle">Run</h2>
+                <div class="fieldDescription" style="margin-bottom:1em;">
+                    A run also happens automatically — see Dashboard → Scheduled Tasks → AutoPlaylist.
+                </div>
+                <button is="emby-button" type="button" id="RunNow" class="raised button-submit emby-button">
+                    <span>Curate now</span>
+                </button>
+                <button is="emby-button" type="button" id="CancelRun" class="raised button-cancel emby-button">
+                    <span>Cancel</span>
+                </button>
+
+                <div id="RunState" style="margin-top:1em;font-weight:600;"></div>
+                <pre id="RunLog" style="max-height:22em;overflow:auto;white-space:pre-wrap;background:rgba(0,0,0,.25);padding:.75em;border-radius:4px;"></pre>
+            </div>
+
+            <div class="verticalSection">
+                <h2 class="sectionTitle">Playlists AutoPlaylist owns</h2>
+                <div id="OwnedPlaylists"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        (function () {
+            var pluginId = '56bd1236-bb86-47e0-863d-e5a5fe12935b';
+            var page = document.querySelector('#AutoPlaylistConfigPage');
+            var pollTimer = null;
+
+            var numbers = ['Temperature', 'ContextTokens', 'RequestTimeoutSeconds', 'PlaylistsPerRun',
+                'MaxManagedPlaylists', 'TargetTrackCount', 'MaxTracksPerArtist', 'MaxTracksPerAlbum',
+                'MinTrackCount', 'MinArtistCount', 'MinTrackSeconds', 'MaxTrackSeconds',
+                'FreshFindsAlbumCount', 'CandidatesPerRequest', 'MaxCandidatePool',
+                'CandidatesPerSeedArtist', 'MaxArtistsInPrompt', 'AngleAttempts'];
+            var texts = ['OllamaUrl', 'KeepAlive', 'PlaylistNamePrefix', 'PlaylistTag',
+                'FreshFindsName', 'ExtraInstructions'];
+            var checks = ['DisableThinking', 'MakePlaylistsPublic', 'MaintainFreshFinds',
+                'ExcludeHolidayMusic', 'PreferStudioVersions', 'VerboseLogging'];
+
+            function el(id) {
+                return page.querySelector('#' + id);
+            }
+
+            function fillUsers(selectedId) {
+                return ApiClient.getUsers().then(function (users) {
+                    var select = el('UserId');
+                    select.innerHTML = '<option value="">First administrator</option>' +
+                        users.map(function (u) {
+                            return '<option value="' + u.Id + '">' + u.Name + '</option>';
+                        }).join('');
+                    select.value = selectedId || '';
+                });
+            }
+
+            function fillModels(selected, quiet) {
+                var url = el('OllamaUrl').value;
+                var result = el('ConnectionResult');
+                return ApiClient.ajax({
+                    type: 'GET',
+                    url: ApiClient.getUrl('AutoPlaylist/Models', { url: url }),
+                    dataType: 'json'
+                }).then(function (models) {
+                    var select = el('Model');
+                    if (!models.length) {
+                        select.innerHTML = '<option value="">No models on that server</option>';
+                        result.textContent = 'Connected, but that server has no models. Pull one first.';
+                        return;
+                    }
+                    select.innerHTML = models.map(function (m) {
+                        return '<option value="' + m + '">' + m + '</option>';
+                    }).join('');
+                    if (selected && models.indexOf(selected) === -1) {
+                        select.innerHTML = '<option value="' + selected + '">' + selected + ' (not on this server)</option>' + select.innerHTML;
+                    }
+                    select.value = selected || models[0];
+                    result.textContent = 'Connected. ' + models.length + ' model(s) available.';
+                }, function () {
+                    var select = el('Model');
+                    if (selected) {
+                        select.innerHTML = '<option value="' + selected + '">' + selected + '</option>';
+                        select.value = selected;
+                    } else {
+                        select.innerHTML = '<option value="">Could not reach Ollama</option>';
+                    }
+                    if (!quiet) {
+                        result.textContent = 'Could not reach Ollama at ' + url + '.';
+                    }
+                });
+            }
+
+            // Read a field whichever casing the server serialises it in.
+            function get(obj, name) {
+                if (!obj) {
+                    return undefined;
+                }
+                if (obj[name] !== undefined) {
+                    return obj[name];
+                }
+                return obj[name.charAt(0).toLowerCase() + name.slice(1)];
+            }
+
+            // Write back to whichever casing the server used, so the round trip matches.
+            function set(obj, name, value) {
+                var camel = name.charAt(0).toLowerCase() + name.slice(1);
+                if (obj[name] === undefined && obj[camel] !== undefined) {
+                    obj[camel] = value;
+                } else {
+                    obj[name] = value;
+                }
+            }
+
+            function renderStatus(raw) {
+                var status = {
+                    Running: get(raw, 'Running'),
+                    Step: get(raw, 'Step') || '',
+                    Progress: get(raw, 'Progress') || 0,
+                    FinishedUtc: get(raw, 'FinishedUtc'),
+                    LastError: get(raw, 'LastError'),
+                    Log: get(raw, 'Log') || [],
+                    Playlists: (get(raw, 'Playlists') || []).map(function (p) {
+                        return {
+                            Id: get(p, 'Id'),
+                            Name: get(p, 'Name') || '',
+                            Overview: get(p, 'Overview') || '',
+                            TrackCount: get(p, 'TrackCount') || 0
+                        };
+                    })
+                };
+
+                var state = el('RunState');
+                if (status.Running) {
+                    state.textContent = 'Running — ' + status.Step + ' (' + Math.round(status.Progress) + '%)';
+                } else if (status.LastError) {
+                    state.textContent = 'Last run failed: ' + status.LastError;
+                } else if (status.FinishedUtc) {
+                    state.textContent = 'Idle. Last run finished ' + new Date(status.FinishedUtc).toLocaleString() + '.';
+                } else {
+                    state.textContent = 'Idle.';
+                }
+
+                var log = el('RunLog');
+                log.textContent = status.Log.join('\n');
+                log.scrollTop = log.scrollHeight;
+
+                var list = el('OwnedPlaylists');
+                if (!status.Playlists.length) {
+                    list.innerHTML = '<div class="fieldDescription">None yet. Playlists appear here once a run creates them.</div>';
+                } else {
+                    list.innerHTML = status.Playlists.map(function (p) {
+                        return '<div style="display:flex;align-items:center;gap:1em;padding:.4em 0;border-bottom:1px solid rgba(255,255,255,.1);">' +
+                            '<div style="flex:1;"><div style="font-weight:600;">' + p.Name + ' <span style="opacity:.6;font-weight:400;">· ' + p.TrackCount + ' tracks</span></div>' +
+                            '<div class="fieldDescription">' + (p.Overview || '') + '</div></div>' +
+                            '<button is="emby-button" type="button" class="raised button-cancel emby-button deletePlaylist" data-id="' + p.Id + '"><span>Delete</span></button>' +
+                            '</div>';
+                    }).join('');
+
+                    list.querySelectorAll('.deletePlaylist').forEach(function (button) {
+                        button.addEventListener('click', function () {
+                            if (!window.confirm('Delete this playlist? Only playlists AutoPlaylist made can be deleted here.')) {
+                                return;
+                            }
+                            ApiClient.ajax({
+                                type: 'DELETE',
+                                url: ApiClient.getUrl('AutoPlaylist/Playlists/' + button.getAttribute('data-id'))
+                            }).then(refresh);
+                        });
+                    });
+                }
+
+                if (status.Running && !pollTimer) {
+                    pollTimer = setInterval(refresh, 2500);
+                } else if (!status.Running && pollTimer) {
+                    clearInterval(pollTimer);
+                    pollTimer = null;
+                }
+            }
+
+            function refresh() {
+                return ApiClient.ajax({
+                    type: 'GET',
+                    url: ApiClient.getUrl('AutoPlaylist/Status'),
+                    dataType: 'json'
+                }).then(renderStatus);
+            }
+
+            page.addEventListener('pageshow', function () {
+                Dashboard.showLoadingMsg();
+                ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                    numbers.concat(texts).forEach(function (name) {
+                        el(name).value = get(config, name);
+                    });
+                    checks.forEach(function (name) {
+                        el(name).checked = !!get(config, name);
+                    });
+
+                    return Promise.all([
+                        fillUsers(get(config, 'UserId')),
+                        fillModels(get(config, 'Model'), true),
+                        refresh()
+                    ]);
+                }).then(function () {
+                    Dashboard.hideLoadingMsg();
+                }, function () {
+                    Dashboard.hideLoadingMsg();
+                });
+            });
+
+            page.addEventListener('pagehide', function () {
+                if (pollTimer) {
+                    clearInterval(pollTimer);
+                    pollTimer = null;
+                }
+            });
+
+            el('LoadModels').addEventListener('click', function () {
+                el('ConnectionResult').textContent = 'Connecting…';
+                fillModels(el('Model').value, false);
+            });
+
+            el('RunNow').addEventListener('click', function () {
+                ApiClient.ajax({ type: 'POST', url: ApiClient.getUrl('AutoPlaylist/Run') }).then(function () {
+                    refresh();
+                }, function () {
+                    Dashboard.alert('Could not start a run. Save a model first, or a run is already going.');
+                });
+            });
+
+            el('CancelRun').addEventListener('click', function () {
+                ApiClient.ajax({ type: 'POST', url: ApiClient.getUrl('AutoPlaylist/Cancel') }).then(refresh);
+            });
+
+            page.querySelector('#AutoPlaylistConfigForm').addEventListener('submit', function (e) {
+                e.preventDefault();
+                Dashboard.showLoadingMsg();
+                ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                    numbers.forEach(function (name) {
+                        set(config, name, Number(el(name).value));
+                    });
+                    texts.forEach(function (name) {
+                        set(config, name, el(name).value);
+                    });
+                    checks.forEach(function (name) {
+                        set(config, name, el(name).checked);
+                    });
+                    set(config, 'Model', el('Model').value);
+                    set(config, 'UserId', el('UserId').value);
+
+                    ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
+                        Dashboard.processPluginConfigurationUpdateResult(result);
+                    });
+                });
+                return false;
+            });
+        })();
+    </script>
+</div>
+</body>
+</html>

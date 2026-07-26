@@ -1,0 +1,27 @@
+# Local Jellyfin DB copy (large; recreated on every run)
+.jellyfin.db.copy
+*.db
+*.db-wal
+*.db-shm
+
+# Secrets / per-install config — never commit
+.env
+.env.*
+*.token
+
+# Logs
+*.log
+
+# Python
+__pycache__/
+*.pyc
+
+# .NET build output
+bin/
+obj/
+artifacts/
+*.user
+*.suo
+.vs/
+.vscode/
+.idea/

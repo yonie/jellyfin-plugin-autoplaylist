@@ -1,0 +1,42 @@
+name: build
+
+on:
+  push:
+    branches: [main, master]
+    paths-ignore: ['**/*.md']
+  pull_request:
+    paths-ignore: ['**/*.md']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore
+        run: dotnet restore Jellyfin.Plugin.AutoPlaylist/Jellyfin.Plugin.AutoPlaylist.csproj
+
+      - name: Build
+        run: dotnet build Jellyfin.Plugin.AutoPlaylist/Jellyfin.Plugin.AutoPlaylist.csproj -c Release --no-restore
+
+      - name: Package (dry run)
+        run: |
+          python3 -m pip install --quiet pyyaml
+          dotnet publish Jellyfin.Plugin.AutoPlaylist/Jellyfin.Plugin.AutoPlaylist.csproj \
+            -c Release -o publish --no-restore
+          python3 .github/scripts/package.py \
+            --version 0.0.0.1 \
+            --tag v0.0.0.1 \
+            --repo "${GITHUB_REPOSITORY}" \
+            --changelog "dry run"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: autoplaylist-dev
+          path: artifacts/*.zip

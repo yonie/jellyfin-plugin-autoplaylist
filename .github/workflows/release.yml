@@ -1,0 +1,76 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release, e.g. 1.0.0.0'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Resolve version
+        id: version
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            RAW="${{ github.event.inputs.version }}"
+          else
+            RAW="${GITHUB_REF_NAME}"
+          fi
+          VERSION="${RAW#v}"
+          # Pad to the four-part version Jellyfin expects.
+          while [ "$(echo "$VERSION" | tr -cd '.' | wc -c)" -lt 3 ]; do VERSION="${VERSION}.0"; done
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${RAW#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        run: |
+          dotnet publish Jellyfin.Plugin.AutoPlaylist/Jellyfin.Plugin.AutoPlaylist.csproj \
+            -c Release -o publish \
+            -p:Version=${{ steps.version.outputs.version }} \
+            -p:AssemblyVersion=${{ steps.version.outputs.version }} \
+            -p:FileVersion=${{ steps.version.outputs.version }}
+
+      - name: Package and update manifest
+        run: |
+          python3 -m pip install --quiet pyyaml
+          python3 .github/scripts/package.py \
+            --version "${{ steps.version.outputs.version }}" \
+            --tag "${{ steps.version.outputs.tag }}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --changelog "$(git log -1 --pretty=%s)"
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.version.outputs.tag }}" \
+            --title "${{ steps.version.outputs.tag }}" \
+            --notes "Install by adding the manifest URL from the README as a Jellyfin plugin repository." \
+            artifacts/*.zip \
+            || gh release upload "${{ steps.version.outputs.tag }}" artifacts/*.zip --clobber
+
+      - name: Commit manifest
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add manifest.json
+          git diff --staged --quiet && exit 0
+          git commit -m "manifest: ${{ steps.version.outputs.version }}"
+          git push origin HEAD:${{ github.event.repository.default_branch }}
