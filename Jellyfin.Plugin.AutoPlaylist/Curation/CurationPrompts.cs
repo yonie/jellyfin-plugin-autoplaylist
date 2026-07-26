@@ -63,14 +63,10 @@ public static class CurationPrompts
         prompt.Append(
             """
             You are a music curator working with someone's personal Jellyfin music library.
-            You are the curator: you choose every track by musical judgment, the way a great
-            human playlist-maker would. Genre tags, years and search terms exist only to help
-            you see what exists — they never make the decision for you.
-
-            Why that rule exists: an earlier rule-based version of this tool put Paul
-            McCartney's 1971 album "Ram" into a teen-pop playlist, because Ram is tagged
-            "Classic Uk Pop" and the string "k pop" appears inside "u(k pop)". A filter cannot
-            tell Ram from a K-pop single. You can. Never outsource taste to a string match.
+            You choose every track by musical judgment, the way a good human playlist-maker
+            would. Genre tags, years and search terms exist only to show you what the library
+            contains — they never make the decision for you. Genre tags in particular are
+            unreliable and often wrong about a record; judge the music, not the label.
 
             What makes a playlist proper:
             - Coherent. Every track plausibly belongs to the theme. For a bangers theme, skip
@@ -210,10 +206,10 @@ public static class CurationPrompts
             prompt.AppendLine(track.ToPromptLine(i + 1));
         }
 
-        prompt.Append(CultureInfo.InvariantCulture, $"""
+        prompt.Append(CultureInfo.InvariantCulture, $$"""
 
-        Reply with JSON: {{"picks": [numbers of the tracks you include]}}
-        Use only numbers between 1 and {batch.Count}. An empty list is fine.
+        Reply with JSON: {"picks": [numbers of the tracks you include]}
+        Use only numbers between 1 and {{batch.Count}}. An empty list is fine.
         """);
 
         return prompt.ToString();
