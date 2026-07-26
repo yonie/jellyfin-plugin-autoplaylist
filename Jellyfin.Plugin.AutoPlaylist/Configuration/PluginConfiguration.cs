@@ -122,6 +122,12 @@ public class PluginConfiguration : BasePluginConfiguration
     public string PlaylistNamePrefix { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets a value indicating whether each run writes descriptions for its own
+    /// playlists that do not have one yet, based on a sample of what is actually on them.
+    /// </summary>
+    public bool WriteMissingDescriptions { get; set; } = true;
+
+    /// <summary>
     /// Gets or sets a value indicating whether to maintain one continuously refreshed
     /// playlist of recently added music.
     /// </summary>

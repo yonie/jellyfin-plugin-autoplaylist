@@ -42,6 +42,18 @@ public sealed class AngleProposal
 }
 
 /// <summary>
+/// The model's description for an existing playlist.
+/// </summary>
+public sealed class DescriptionResponse
+{
+    /// <summary>
+    /// Gets or sets the written description.
+    /// </summary>
+    [JsonPropertyName("description")]
+    public string? Description { get; set; }
+}
+
+/// <summary>
 /// The model's picks from one candidate batch.
 /// </summary>
 public sealed class PickResponse

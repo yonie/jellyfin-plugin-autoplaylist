@@ -109,6 +109,19 @@ public sealed class PlaylistCurator
                 owned.Count,
                 config.PlaylistTag));
 
+            if (config.WriteMissingDescriptions)
+            {
+                Report(progress, 4, "writing missing descriptions");
+                try
+                {
+                    await DescribeCoreAsync(config, false, cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception ex) when (ex is OllamaException or InvalidOperationException)
+                {
+                    Log("writing descriptions failed: " + ex.Message);
+                }
+            }
+
             if (config.MaintainFreshFinds)
             {
                 Report(progress, 5, "refreshing " + config.FreshFindsName);
@@ -170,10 +183,59 @@ public sealed class PlaylistCurator
     }
 
     /// <summary>
+    /// Writes descriptions for playlists this plugin owns that do not have one, by
+    /// reading a sample of what is on each and asking the model to describe it.
+    /// </summary>
+    /// <param name="overwriteExisting">Also rewrite descriptions that already exist.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>How many descriptions were written.</returns>
+    public async Task<int> DescribeOwnedPlaylistsAsync(bool overwriteExisting, CancellationToken cancellationToken)
+    {
+        if (!await _gate.WaitAsync(0, cancellationToken).ConfigureAwait(false))
+        {
+            throw new InvalidOperationException("A curation run is already in progress.");
+        }
+
+        _runLog.Begin();
+        try
+        {
+            var written = await DescribeCoreAsync(Config, overwriteExisting, cancellationToken)
+                .ConfigureAwait(false);
+            _runLog.End(null);
+            return written;
+        }
+        catch (Exception ex)
+        {
+            Log("writing descriptions failed: " + ex.Message);
+            _runLog.End(ex.Message);
+            throw;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    /// <summary>
     /// Starts a run in the background, for the "curate now" button.
     /// </summary>
     /// <returns>False when a run is already in progress.</returns>
     public bool StartBackgroundRun()
+    {
+        return StartBackground(cts => RunAsync(null, cts));
+    }
+
+    /// <summary>
+    /// Starts a description backfill in the background, for the settings page button.
+    /// </summary>
+    /// <param name="overwriteExisting">Also rewrite descriptions that already exist.</param>
+    /// <returns>False when a run is already in progress.</returns>
+    public bool StartBackgroundDescribe(bool overwriteExisting)
+    {
+        return StartBackground(cts => DescribeOwnedPlaylistsAsync(overwriteExisting, cts));
+    }
+
+    private bool StartBackground(Func<CancellationToken, Task> work)
     {
         if (IsRunning)
         {
@@ -187,11 +249,11 @@ public sealed class PlaylistCurator
             {
                 try
                 {
-                    await RunAsync(null, cts.Token).ConfigureAwait(false);
+                    await work(cts.Token).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "AutoPlaylist: background run ended");
+                    _logger.LogError(ex, "AutoPlaylist: background work ended");
                 }
                 finally
                 {
@@ -325,6 +387,89 @@ public sealed class PlaylistCurator
         _runLog.Step = step;
         _runLog.Progress = percent;
         progress?.Report(percent);
+    }
+
+    /// <summary>
+    /// Writes the missing descriptions. Reads a sample of each playlist's real contents,
+    /// so a playlist created before descriptions existed still gets an accurate one.
+    /// </summary>
+    private async Task<int> DescribeCoreAsync(
+        PluginConfiguration config,
+        bool overwriteExisting,
+        CancellationToken cancellationToken)
+    {
+        var user = ResolveUser(config, false);
+        var owned = GetOwnedPlaylists(user.Id, config);
+        var system = CurationPrompts.SystemPrompt(config);
+        var written = 0;
+
+        foreach (var playlist in owned)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!overwriteExisting && !string.IsNullOrWhiteSpace(playlist.Overview))
+            {
+                continue;
+            }
+
+            var children = playlist.GetLinkedChildren();
+            if (children.Count < 5)
+            {
+                continue;
+            }
+
+            // An even sample across the playlist, so the description reflects the whole
+            // thing rather than whatever happens to be at the top.
+            var step = Math.Max(1, children.Count / 40);
+            var lines = new List<string>(40);
+            for (var i = 0; i < children.Count && lines.Count < 40; i += step)
+            {
+                if (children[i] is Audio audio)
+                {
+                    var artist = audio.Artists is { Count: > 0 } ? audio.Artists[0] : "Unknown";
+                    lines.Add(string.Format(
+                        CultureInfo.InvariantCulture,
+                        "{0} — {1} [{2}{3}]",
+                        artist,
+                        audio.Name,
+                        audio.ProductionYear?.ToString(CultureInfo.InvariantCulture) ?? "?",
+                        audio.Genres is { Length: > 0 } ? ", " + audio.Genres[0] : string.Empty));
+                }
+            }
+
+            if (lines.Count < 5)
+            {
+                continue;
+            }
+
+            _runLog.Step = "describing " + playlist.Name;
+            try
+            {
+                var reply = await _ollama.ChatJsonAsync<DescriptionResponse>(
+                    system,
+                    CurationPrompts.DescriptionPrompt(playlist.Name, string.Join('\n', lines)),
+                    CurationPrompts.DescriptionSchema,
+                    cancellationToken).ConfigureAwait(false);
+
+                var description = (reply.Description ?? string.Empty).Trim();
+                if (description.Length == 0)
+                {
+                    continue;
+                }
+
+                playlist.Overview = description;
+                await playlist.UpdateToRepositoryAsync(ItemUpdateType.MetadataEdit, cancellationToken)
+                    .ConfigureAwait(false);
+                written++;
+                Log("described \"" + playlist.Name + "\": " + description);
+            }
+            catch (OllamaException ex)
+            {
+                Log("could not describe \"" + playlist.Name + "\": " + ex.Message);
+            }
+        }
+
+        Log(string.Format(CultureInfo.InvariantCulture, "wrote {0} description(s)", written));
+        return written;
     }
 
     private async Task CurateThemedAsync(

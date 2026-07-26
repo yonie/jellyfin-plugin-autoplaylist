@@ -44,6 +44,19 @@ public static class CurationPrompts
     """;
 
     /// <summary>
+    /// Schema for a written playlist description.
+    /// </summary>
+    public const string DescriptionSchema = """
+    {
+      "type": "object",
+      "properties": {
+        "description": { "type": "string" }
+      },
+      "required": ["description"]
+    }
+    """;
+
+    /// <summary>
     /// The description used for the continuously refreshed recently-added playlist.
     /// </summary>
     public const string FreshFindsDescription =
@@ -158,6 +171,35 @@ public static class CurationPrompts
         """);
 
         return prompt.ToString();
+    }
+
+    /// <summary>
+    /// Asks the model to write the description for a playlist that already exists, by
+    /// reading a sample of what is actually on it.
+    /// </summary>
+    /// <param name="playlistName">The playlist name.</param>
+    /// <param name="sample">A sample of the playlist's tracks, one per line.</param>
+    /// <returns>The user prompt.</returns>
+    public static string DescriptionPrompt(string playlistName, string sample)
+    {
+        return string.Format(
+            CultureInfo.InvariantCulture,
+            """
+            PLAYLIST: {0}
+
+            A sample of what is on it:
+
+            {1}
+
+            Write the description that belongs in this playlist's Jellyfin overview: one
+            sentence, at most 180 characters, telling a listener what this playlist is —
+            its mood, era, scene or thread. Be concrete rather than generic. Do not name
+            any artist, album or track, and do not describe it as a "collection of songs".
+
+            Reply with JSON: the description under the key "description".
+            """,
+            playlistName,
+            sample);
     }
 
     /// <summary>

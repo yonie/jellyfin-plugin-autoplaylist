@@ -124,6 +124,17 @@
 
                     <div class="checkboxContainer checkboxContainer-withDescription">
                         <label class="emby-checkbox-label">
+                            <input id="WriteMissingDescriptions" name="WriteMissingDescriptions" type="checkbox" is="emby-checkbox"/>
+                            <span>Write missing playlist descriptions</span>
+                        </label>
+                        <div class="fieldDescription">
+                            Playlists this plugin owns that have no description get one written from a
+                            sample of what is on them. New playlists are described when they are created.
+                        </div>
+                    </div>
+
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
                             <input id="MaintainFreshFinds" name="MaintainFreshFinds" type="checkbox" is="emby-checkbox"/>
                             <span>Maintain a recently-added playlist</span>
                         </label>
@@ -261,9 +272,16 @@
                 <button is="emby-button" type="button" id="RunNow" class="raised button-submit emby-button">
                     <span>Curate now</span>
                 </button>
+                <button is="emby-button" type="button" id="DescribeNow" class="raised emby-button">
+                    <span>Write missing descriptions</span>
+                </button>
                 <button is="emby-button" type="button" id="CancelRun" class="raised button-cancel emby-button">
                     <span>Cancel</span>
                 </button>
+                <div class="fieldDescription">
+                    Descriptions are written only for playlists this plugin owns, and only the
+                    description changes — tracks and order are left alone.
+                </div>
 
                 <div id="RunState" style="margin-top:1em;font-weight:600;"></div>
                 <pre id="RunLog" style="max-height:22em;overflow:auto;white-space:pre-wrap;background:rgba(0,0,0,.25);padding:.75em;border-radius:4px;"></pre>
@@ -290,8 +308,8 @@
                 'CandidatesPerSeedArtist', 'MaxArtistsInPrompt', 'AngleAttempts'];
             var texts = ['OllamaUrl', 'KeepAlive', 'PlaylistNamePrefix', 'PlaylistTag',
                 'FreshFindsName', 'ExtraInstructions'];
-            var checks = ['DisableThinking', 'MakePlaylistsPublic', 'MaintainFreshFinds',
-                'ExcludeHolidayMusic', 'PreferStudioVersions', 'VerboseLogging'];
+            var checks = ['DisableThinking', 'MakePlaylistsPublic', 'WriteMissingDescriptions',
+                'MaintainFreshFinds', 'ExcludeHolidayMusic', 'PreferStudioVersions', 'VerboseLogging'];
 
             function el(id) {
                 return page.querySelector('#' + id);
@@ -478,6 +496,14 @@
                     refresh();
                 }, function () {
                     Dashboard.alert('Could not start a run. Save a model first, or a run is already going.');
+                });
+            });
+
+            el('DescribeNow').addEventListener('click', function () {
+                ApiClient.ajax({ type: 'POST', url: ApiClient.getUrl('AutoPlaylist/Describe') }).then(function () {
+                    refresh();
+                }, function () {
+                    Dashboard.alert('Could not start. Save a model first, or a run is already going.');
                 });
             });
 

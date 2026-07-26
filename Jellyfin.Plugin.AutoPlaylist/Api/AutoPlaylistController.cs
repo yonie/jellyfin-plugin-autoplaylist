@@ -121,6 +121,27 @@ public class AutoPlaylistController : ControllerBase
     }
 
     /// <summary>
+    /// Writes descriptions for the plugin's own playlists that do not have one, reading a
+    /// sample of each playlist to describe what is actually on it.
+    /// </summary>
+    /// <param name="overwrite">Also rewrite descriptions that already exist.</param>
+    /// <returns>Accepted, or conflict when a run is already going.</returns>
+    [HttpPost("Describe")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public ActionResult WriteDescriptions([FromQuery] bool overwrite = false)
+    {
+        if (string.IsNullOrWhiteSpace(Plugin.Instance?.Configuration.Model))
+        {
+            return BadRequest(new { Error = "Pick an Ollama model first." });
+        }
+
+        return _curator.StartBackgroundDescribe(overwrite)
+            ? Accepted()
+            : Conflict(new { Error = "A curation run is already in progress." });
+    }
+
+    /// <summary>
     /// Cancels the run in progress.
     /// </summary>
     /// <returns>No content.</returns>

@@ -32,6 +32,12 @@ the composition" is not something you can express as a filter over genre tags an
 years, but a model can recognise it track by track. The description is written into the
 playlist's overview in Jellyfin, so each playlist explains its own premise.
 
+Playlists made before descriptions existed can be filled in retroactively: **Write
+missing descriptions** on the settings page reads a sample of each playlist the plugin
+owns and writes a description of what is actually on it. Every run does this
+automatically for anything still missing one. Only the description is touched — tracks
+and order are left alone.
+
 ## Requirements
 
 - Jellyfin 10.11 or newer
