@@ -10,6 +10,7 @@ using Jellyfin.Database.Implementations.Enums;
 using Jellyfin.Plugin.AutoPlaylist.Configuration;
 using Jellyfin.Plugin.AutoPlaylist.Ollama;
 using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities.Audio;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Playlists;
 using MediaBrowser.Model.Playlists;
