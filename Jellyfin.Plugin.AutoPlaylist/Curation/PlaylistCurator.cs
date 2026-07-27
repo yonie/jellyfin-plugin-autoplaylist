@@ -498,7 +498,12 @@ public sealed class PlaylistCurator
         double span,
         CancellationToken cancellationToken)
     {
-        var existingNames = owned.Select(p => p.Name).Where(n => !string.IsNullOrWhiteSpace(n)).ToList();
+        var existing = owned
+            .Where(p => !string.IsNullOrWhiteSpace(p.Name))
+            .Select(p => string.IsNullOrWhiteSpace(p.Overview)
+                ? p.Name
+                : p.Name + " — " + p.Overview.Trim())
+            .ToList();
         var rejected = new List<string>();
         var system = CurationPrompts.SystemPrompt(config);
 
@@ -509,7 +514,7 @@ public sealed class PlaylistCurator
 
             var proposal = await _ollama.ChatJsonAsync<AngleProposal>(
                 system,
-                CurationPrompts.AnglePrompt(index, existingNames, config, rejected),
+                CurationPrompts.AnglePrompt(index, existing, config, rejected),
                 CurationPrompts.AngleSchema,
                 cancellationToken).ConfigureAwait(false);
 
@@ -538,7 +543,7 @@ public sealed class PlaylistCurator
             {
                 Log("a playlist called \"" + name + "\" already exists — asking for a different angle");
                 rejected.Add(name + " (name already exists)");
-                existingNames.Add(name);
+                existing.Add(name);
                 continue;
             }
 

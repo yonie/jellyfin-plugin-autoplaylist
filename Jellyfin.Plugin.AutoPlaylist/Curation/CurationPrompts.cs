@@ -112,28 +112,37 @@ public static class CurationPrompts
     /// Asks for one new playlist angle this library can actually sustain.
     /// </summary>
     /// <param name="index">The library index.</param>
-    /// <param name="existingNames">Names of playlists this plugin already made.</param>
+    /// <param name="existing">Playlists this plugin already made, as "name — description".</param>
     /// <param name="config">The plugin configuration.</param>
     /// <param name="rejected">Angles rejected earlier in this run, with the reason.</param>
     /// <returns>The user prompt.</returns>
     public static string AnglePrompt(
         LibraryIndex index,
-        IReadOnlyCollection<string> existingNames,
+        IReadOnlyCollection<string> existing,
         PluginConfiguration config,
         IReadOnlyCollection<string>? rejected = null)
     {
         ArgumentNullException.ThrowIfNull(index);
-        ArgumentNullException.ThrowIfNull(existingNames);
+        ArgumentNullException.ThrowIfNull(existing);
         ArgumentNullException.ThrowIfNull(config);
 
-        var prompt = new StringBuilder(8000);
+        var prompt = new StringBuilder(12000);
         prompt.AppendLine(index.BuildSnapshot(config.MaxArtistsInPrompt, 30));
 
-        if (existingNames.Count > 0)
+        if (existing.Count > 0)
         {
-            prompt.AppendLine("Playlists you have already made here — do not repeat or re-skin these angles:");
-            prompt.AppendJoin(" · ", existingNames);
-            prompt.AppendLine().AppendLine();
+            // Descriptions, not just titles: a new title over an existing premise is not a
+            // new playlist, and the model cannot tell without seeing what each one is.
+            prompt.AppendLine(
+                "Playlists you have already made here, with what each one is. Your proposal must be a "
+                + "genuinely different slice of this library — not one of these under another name, and "
+                + "not an adjacent variation on the same premise:");
+            foreach (var line in existing)
+            {
+                prompt.Append("- ").AppendLine(line);
+            }
+
+            prompt.AppendLine();
         }
 
         if (rejected is { Count: > 0 })
