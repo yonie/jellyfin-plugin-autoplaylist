@@ -33,6 +33,12 @@ def main() -> None:
     parser.add_argument("--build-file", default="build.yaml")
     parser.add_argument("--manifest", default="manifest.json")
     parser.add_argument("--changelog", default="", help="changelog text for this version")
+    parser.add_argument(
+        "--manifest-only",
+        action="store_true",
+        help="reuse the zip already in --out-dir and only update the manifest, so the "
+        "published asset and the manifest checksum can never disagree",
+    )
     args = parser.parse_args()
 
     root = pathlib.Path.cwd()
@@ -65,13 +71,17 @@ def main() -> None:
 
     slug = spec["name"].lower().replace(" ", "-")
     zip_path = out_dir / f"{slug}_{version}.zip"
-    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as archive:
-        archive.writestr("meta.json", json.dumps(meta, indent=4))
-        for artifact in spec.get("artifacts", []):
-            source = publish / artifact
-            if not source.is_file():
-                raise SystemExit(f"missing build artifact: {source}")
-            archive.write(source, artifact)
+    if args.manifest_only:
+        if not zip_path.is_file():
+            raise SystemExit(f"--manifest-only needs an existing zip: {zip_path}")
+    else:
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr("meta.json", json.dumps(meta, indent=4))
+            for artifact in spec.get("artifacts", []):
+                source = publish / artifact
+                if not source.is_file():
+                    raise SystemExit(f"missing build artifact: {source}")
+                archive.write(source, artifact)
 
     checksum = hashlib.md5(zip_path.read_bytes()).hexdigest()  # noqa: S324 - Jellyfin requires md5
     source_url = f"https://github.com/{args.repo}/releases/download/{args.tag}/{zip_path.name}"

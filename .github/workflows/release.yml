@@ -15,10 +15,13 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
     steps:
+      # Check out the tagged commit itself, so the published bytes are always the
+      # code that was tagged.
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.repository.default_branch }}
           fetch-depth: 0
 
       - uses: actions/setup-dotnet@v4
@@ -39,6 +42,19 @@ jobs:
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "tag=v${RAW#v}" >> "$GITHUB_OUTPUT"
 
+      # A tag on a commit that never reached the default branch would publish code
+      # nobody can see on main. Refuse instead of shipping it.
+      - name: Refuse to release a commit that is not on the default branch
+        if: github.ref_type == 'tag'
+        run: |
+          git fetch --quiet origin "$DEFAULT_BRANCH"
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" "origin/$DEFAULT_BRANCH"; then
+            echo "::error::Tag ${GITHUB_REF_NAME} points at $GITHUB_SHA, which is not on origin/$DEFAULT_BRANCH."
+            echo "::error::Push the branch first, then re-tag, so the release matches what is on $DEFAULT_BRANCH."
+            exit 1
+          fi
+          echo "$GITHUB_SHA is on origin/$DEFAULT_BRANCH"
+
       - name: Build
         run: |
           dotnet publish Jellyfin.Plugin.AutoPlaylist/Jellyfin.Plugin.AutoPlaylist.csproj \
@@ -47,14 +63,14 @@ jobs:
             -p:AssemblyVersion=${{ steps.version.outputs.version }} \
             -p:FileVersion=${{ steps.version.outputs.version }}
 
-      - name: Package and update manifest
+      - name: Package
         run: |
           python3 -m pip install --quiet pyyaml
           python3 .github/scripts/package.py \
             --version "${{ steps.version.outputs.version }}" \
             --tag "${{ steps.version.outputs.tag }}" \
             --repo "${GITHUB_REPOSITORY}" \
-            --changelog "$(git log -1 --pretty=%s)"
+            --changelog "$(git log -1 --pretty=%s "$GITHUB_SHA")"
 
       - name: Publish release
         env:
@@ -66,11 +82,21 @@ jobs:
             artifacts/*.zip \
             || gh release upload "${{ steps.version.outputs.tag }}" artifacts/*.zip --clobber
 
-      - name: Commit manifest
+      # The manifest has to live on the default branch, but the checksum must describe
+      # the asset just uploaded — so reuse that exact zip rather than rebuilding it.
+      - name: Update the manifest on the default branch
         run: |
+          git fetch --quiet origin "$DEFAULT_BRANCH"
+          git checkout -B "$DEFAULT_BRANCH" "origin/$DEFAULT_BRANCH"
+          python3 .github/scripts/package.py \
+            --manifest-only \
+            --version "${{ steps.version.outputs.version }}" \
+            --tag "${{ steps.version.outputs.tag }}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --changelog "$(git log -1 --pretty=%s "$GITHUB_SHA")"
           git config user.name  'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           git add manifest.json
           git diff --staged --quiet && exit 0
           git commit -m "manifest: ${{ steps.version.outputs.version }}"
-          git push origin HEAD:${{ github.event.repository.default_branch }}
+          git push origin "HEAD:$DEFAULT_BRANCH"
