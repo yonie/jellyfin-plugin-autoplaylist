@@ -1,1 +1,21 @@
-[]
+[
+    {
+        "guid": "56bd1236-bb86-47e0-863d-e5a5fe12935b",
+        "name": "AutoPlaylist",
+        "description": "AutoPlaylist turns your Jellyfin music library into a growing set of thematic, hand-curated playlists. A local LLM served by Ollama looks at what your library actually holds, chooses an angle, then picks every track by musical judgment \u2014 no genre-filter automation. Playlists it owns are marked with a tag, so your own playlists are never touched. Runs nightly as a scheduled task.",
+        "overview": "LLM-curated music playlists, built from your own library",
+        "owner": "yonie",
+        "category": "General",
+        "imageUrl": "",
+        "versions": [
+            {
+                "version": "1.0.0.0",
+                "changelog": "Keep the recency playlist's description static",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/yonie/jellyfin-plugin-autoplaylist/releases/download/v1.0.0.0/autoplaylist_1.0.0.0.zip",
+                "checksum": "bb994c434f69038a77f086ff239c935c",
+                "timestamp": "2026-07-27T06:11:28.0000000Z"
+            }
+        ]
+    }
+]
