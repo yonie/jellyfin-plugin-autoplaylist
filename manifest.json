@@ -9,6 +9,14 @@
         "imageUrl": "",
         "versions": [
             {
+                "version": "1.0.1.0",
+                "changelog": "manifest: 1.0.0.0",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/yonie/jellyfin-plugin-autoplaylist/releases/download/v1.0.1.0/autoplaylist_1.0.1.0.zip",
+                "checksum": "36539bfd4c819adb402175c4a59cd910",
+                "timestamp": "2026-07-27T19:05:36.0000000Z"
+            },
+            {
                 "version": "1.0.0.0",
                 "changelog": "Keep the recency playlist's description static",
                 "targetAbi": "10.11.0.0",
