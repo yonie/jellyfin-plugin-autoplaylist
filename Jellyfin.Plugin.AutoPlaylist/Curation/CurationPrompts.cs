@@ -233,6 +233,13 @@ public static class CurationPrompts
         ArgumentNullException.ThrowIfNull(batch);
         ArgumentNullException.ThrowIfNull(config);
 
+        // The guide has to be a share of what is left, not a fixed number: batches can be
+        // 60 tracks or 600 depending on the model's context, and "only a handful" would
+        // quietly starve a large batch of picks.
+        var remaining = Math.Max(0, config.TargetTrackCount - chosenSoFar);
+        var batchesLeft = Math.Max(1, batchCount - batchNumber + 1);
+        var guide = Math.Clamp((remaining + batchesLeft - 1) / batchesLeft, 0, batch.Count);
+
         var prompt = new StringBuilder(8000);
         prompt.Append(CultureInfo.InvariantCulture, $"""
         PLAYLIST: {name}
@@ -243,9 +250,10 @@ public static class CurationPrompts
         At most {config.MaxTracksPerArtist} tracks by any one artist and {config.MaxTracksPerAlbum} from
         any one album across the whole playlist, so leave room for artists in later batches.
 
-        Pick only the tracks that genuinely belong on this playlist. Skipping a whole batch is a
-        valid answer — most batches should yield only a handful of tracks. Do not pick a track
-        just because its artist fits; the track itself has to fit.
+        Pick only the tracks that genuinely belong on this playlist. To stay on pace that is
+        roughly {guide} of the {batch.Count} below, but it is a guide and not a quota: take
+        fewer if this batch is weak, more if it is strong, and an empty list is a valid answer.
+        Do not pick a track just because its artist fits; the track itself has to fit.
 
         CANDIDATES:
 
