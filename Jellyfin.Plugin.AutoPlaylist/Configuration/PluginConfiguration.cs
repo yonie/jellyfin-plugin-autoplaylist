@@ -156,8 +156,13 @@ public class PluginConfiguration : BasePluginConfiguration
 
     /// <summary>
     /// Gets or sets how many tracks per seed artist enter the candidate pool.
+    /// This is what sets the pool's real size, so it has to be generous: the model
+    /// only picks a fraction of what it is shown, and the quality gate trims that
+    /// further, so a pool roughly four times <see cref="TargetTrackCount"/> is what
+    /// it takes to actually fill a playlist. Raising it costs nothing on runs that
+    /// pick freely, because selection stops early once it has enough.
     /// </summary>
-    public int CandidatesPerSeedArtist { get; set; } = 14;
+    public int CandidatesPerSeedArtist { get; set; } = 24;
 
     /// <summary>
     /// Gets or sets how many artists are listed in the library snapshot prompt.

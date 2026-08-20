@@ -230,11 +230,16 @@
                     <div class="inputContainer">
                         <label class="inputLabel inputLabelUnfocused" for="MaxCandidatePool">Candidate pool size</label>
                         <input id="MaxCandidatePool" name="MaxCandidatePool" type="number" is="emby-input" min="100"/>
+                        <div class="fieldDescription">An upper bound on the pool, not a target. Leave room above what
+                            &quot;Tracks per seed artist&quot; actually produces, or the pool is trimmed at random.</div>
                     </div>
 
                     <div class="inputContainer">
                         <label class="inputLabel inputLabelUnfocused" for="CandidatesPerSeedArtist">Tracks per seed artist</label>
                         <input id="CandidatesPerSeedArtist" name="CandidatesPerSeedArtist" type="number" is="emby-input" min="1"/>
+                        <div class="fieldDescription">What really decides how full a playlist gets. The model picks only a
+                            fraction of what it sees and the quality bar trims more, so aim for a pool around four times
+                            your target length. Raise this if playlists come out short.</div>
                     </div>
 
                     <div class="inputContainer">
