@@ -97,11 +97,12 @@ def main() -> None:
             "overview": spec["overview"],
             "owner": spec["owner"],
             "category": spec["category"],
-            "imageUrl": "",
+            "imageUrl": spec.get("imageUrl", ""),
             "versions": [],
         }
         manifest.append(entry)
 
+    entry["imageUrl"] = spec.get("imageUrl", entry.get("imageUrl", ""))
     entry["versions"] = [v for v in entry.get("versions", []) if v.get("version") != version]
     entry["versions"].insert(0, {
         "version": version,
