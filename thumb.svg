@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1152" height="648" viewBox="0 0 1152 648">
+  <defs>
+    <linearGradient id="g2" gradientUnits="userSpaceOnUse" x1="-104" y1="-52" x2="122" y2="62">
+      <stop offset="0" stop-color="#AA5CC3"/>
+      <stop offset="1" stop-color="#00A4DC"/>
+    </linearGradient>
+  </defs>
+  <rect width="1152" height="648" fill="#111827"/>
+  <circle cx="576" cy="248" r="132" fill="url(#g2)" opacity="0.16"/>
+  <g transform="translate(576 248)" fill="url(#g2)">
+    <rect x="-104" y="-52" width="150" height="20" rx="10"/>
+    <rect x="-104" y="-10" width="112" height="20" rx="10"/>
+    <rect x="-104" y="32" width="74" height="20" rx="10"/>
+    <circle cx="46" cy="42" r="30"/>
+    <rect x="66" y="-52" width="16" height="96" rx="8"/>
+    <path d="M82 -52 q 40 8 40 36 q -16 -18 -40 -13 z"/>
+  </g>
+  <text x="576" y="472" text-anchor="middle" font-family="DejaVu Sans" font-weight="bold" font-size="92" fill="#ffffff" letter-spacing="-1">AutoPlaylist</text>
+  <text x="576" y="528" text-anchor="middle" font-family="DejaVu Sans" font-size="34" fill="#94a3b8">LLM-curated music playlists</text>
+</svg>

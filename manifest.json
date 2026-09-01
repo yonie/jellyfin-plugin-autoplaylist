@@ -6,7 +6,7 @@
         "overview": "LLM-curated music playlists, built from your own library",
         "owner": "yonie",
         "category": "General",
-        "imageUrl": "",
+        "imageUrl": "https://raw.githubusercontent.com/yonie/jellyfin-plugin-autoplaylist/main/thumb.png",
         "versions": [
             {
                 "version": "1.0.3.0",

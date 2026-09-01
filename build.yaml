@@ -13,6 +13,7 @@ description: >
   playlists are never touched. Runs nightly as a scheduled task.
 category: "General"
 owner: "yonie"
+imageUrl: "https://raw.githubusercontent.com/yonie/jellyfin-plugin-autoplaylist/main/thumb.png"
 artifacts:
   - "Jellyfin.Plugin.AutoPlaylist.dll"
 changelog: >
