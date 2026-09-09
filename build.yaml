@@ -1,9 +1,9 @@
 ---
 name: "AutoPlaylist"
 guid: "56bd1236-bb86-47e0-863d-e5a5fe12935b"
-version: "1.0.0.0"
-targetAbi: "10.11.0.0"
-framework: "net9.0"
+version: "1.1.0.0"
+targetAbi: "12.0.0.0"
+framework: "net10.0"
 overview: "LLM-curated music playlists, built from your own library"
 description: >
   AutoPlaylist turns your Jellyfin music library into a growing set of thematic,

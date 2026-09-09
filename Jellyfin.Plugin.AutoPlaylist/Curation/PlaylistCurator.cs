@@ -294,6 +294,19 @@ public sealed class PlaylistCurator
     }
 
     /// <summary>
+    /// Counts the tracks actually on a playlist. 12.0 keeps playlist contents in the
+    /// database instead of on the item, so the count comes from the user-aware
+    /// GetChildren path; the item's LinkedChildren no longer reflects the playlist.
+    /// </summary>
+    /// <param name="playlist">The playlist to count.</param>
+    /// <returns>The number of tracks on the playlist.</returns>
+    public int GetTrackCount(Playlist playlist)
+    {
+        var user = ResolveUser(Config, false);
+        return playlist.GetChildren(user, false, null).Count;
+    }
+
+    /// <summary>
     /// Lists the playlists this plugin owns — the ones carrying its tag. Everything else
     /// in the server is off limits, whether or not the name looks familiar.
     /// </summary>
@@ -412,7 +425,7 @@ public sealed class PlaylistCurator
                 continue;
             }
 
-            if (await DescribeOneAsync(playlist, system, cancellationToken).ConfigureAwait(false))
+            if (await DescribeOneAsync(playlist, user, system, cancellationToken).ConfigureAwait(false))
             {
                 written++;
             }
@@ -427,10 +440,14 @@ public sealed class PlaylistCurator
     /// </summary>
     private async Task<bool> DescribeOneAsync(
         Playlist playlist,
+        User user,
         string system,
         CancellationToken cancellationToken)
     {
-        var children = playlist.GetLinkedChildren();
+        // 12.0 keeps playlist contents in the database rather than on the item, so the
+        // track list is read through the user-aware GetChildren path. GetLinkedChildren
+        // no longer reflects what is actually on a playlist.
+        var children = playlist.GetChildren(user, false, null);
         if (children.Count < 5)
         {
             return false;
