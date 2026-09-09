@@ -80,7 +80,7 @@ public class AutoPlaylistController : ControllerBase
                 Id = p.Id.ToString("N", System.Globalization.CultureInfo.InvariantCulture),
                 Name = p.Name ?? string.Empty,
                 Overview = p.Overview ?? string.Empty,
-                TrackCount = p.LinkedChildren.Length
+                TrackCount = _curator.GetTrackCount(p)
             }));
         }
         catch (InvalidOperationException)
