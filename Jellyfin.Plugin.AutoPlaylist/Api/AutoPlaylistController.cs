@@ -75,12 +75,12 @@ public class AutoPlaylistController : ControllerBase
         var playlists = new List<OwnedPlaylist>();
         try
         {
-            playlists.AddRange(_curator.GetOwnedPlaylists().Select(p => new OwnedPlaylist
+            playlists.AddRange(_curator.GetOwnedPlaylistsWithCounts().Select(t => new OwnedPlaylist
             {
-                Id = p.Id.ToString("N", System.Globalization.CultureInfo.InvariantCulture),
-                Name = p.Name ?? string.Empty,
-                Overview = p.Overview ?? string.Empty,
-                TrackCount = _curator.GetTrackCount(p)
+                Id = t.Playlist.Id.ToString("N", System.Globalization.CultureInfo.InvariantCulture),
+                Name = t.Playlist.Name ?? string.Empty,
+                Overview = t.Playlist.Overview ?? string.Empty,
+                TrackCount = t.TrackCount
             }));
         }
         catch (InvalidOperationException)
