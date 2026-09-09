@@ -294,16 +294,18 @@ public sealed class PlaylistCurator
     }
 
     /// <summary>
-    /// Counts the tracks actually on a playlist. 12.0 keeps playlist contents in the
-    /// database instead of on the item, so the count comes from the user-aware
-    /// GetChildren path; the item's LinkedChildren no longer reflects the playlist.
+    /// Lists the playlists this plugin owns together with a real track count. The owner
+    /// user is resolved once for the whole batch. 12.0 keeps playlist contents in the
+    /// database instead of on the item, so counts come from the user-aware GetChildren
+    /// path; the item's LinkedChildren no longer reflects the playlist.
     /// </summary>
-    /// <param name="playlist">The playlist to count.</param>
-    /// <returns>The number of tracks on the playlist.</returns>
-    public int GetTrackCount(Playlist playlist)
+    /// <returns>Owned playlists with their track counts.</returns>
+    public IReadOnlyList<(Playlist Playlist, int TrackCount)> GetOwnedPlaylistsWithCounts()
     {
         var user = ResolveUser(Config, false);
-        return playlist.GetChildren(user, false, null).Count;
+        return GetOwnedPlaylists(user.Id, Config)
+            .Select(p => (p, p.GetChildren(user, false, null).Count))
+            .ToList();
     }
 
     /// <summary>
