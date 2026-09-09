@@ -9,6 +9,14 @@
         "imageUrl": "https://raw.githubusercontent.com/yonie/jellyfin-plugin-autoplaylist/main/thumb.png",
         "versions": [
             {
+                "version": "1.1.0.0",
+                "changelog": "Merge pull request #2 from yonie/feat/jellyfin-12",
+                "targetAbi": "12.0.0.0",
+                "sourceUrl": "https://github.com/yonie/jellyfin-plugin-autoplaylist/releases/download/v1.1.0.0/autoplaylist_1.1.0.0.zip",
+                "checksum": "0943cf767cfa5de8137d7f2a861251a0",
+                "timestamp": "2026-09-09T13:58:55.0000000Z"
+            },
+            {
                 "version": "1.0.3.0",
                 "changelog": "Scale the per-batch pick guide to the batch size",
                 "targetAbi": "10.11.0.0",
