@@ -294,6 +294,21 @@ public sealed class PlaylistCurator
     }
 
     /// <summary>
+    /// Lists the playlists this plugin owns together with a real track count. The owner
+    /// user is resolved once for the whole batch. 12.0 keeps playlist contents in the
+    /// database instead of on the item, so counts come from the user-aware GetChildren
+    /// path; the item's LinkedChildren no longer reflects the playlist.
+    /// </summary>
+    /// <returns>Owned playlists with their track counts.</returns>
+    public IReadOnlyList<(Playlist Playlist, int TrackCount)> GetOwnedPlaylistsWithCounts()
+    {
+        var user = ResolveUser(Config, false);
+        return GetOwnedPlaylists(user.Id, Config)
+            .Select(p => (p, p.GetChildren(user, false, null).Count))
+            .ToList();
+    }
+
+    /// <summary>
     /// Lists the playlists this plugin owns — the ones carrying its tag. Everything else
     /// in the server is off limits, whether or not the name looks familiar.
     /// </summary>
@@ -412,7 +427,7 @@ public sealed class PlaylistCurator
                 continue;
             }
 
-            if (await DescribeOneAsync(playlist, system, cancellationToken).ConfigureAwait(false))
+            if (await DescribeOneAsync(playlist, user, system, cancellationToken).ConfigureAwait(false))
             {
                 written++;
             }
@@ -427,10 +442,14 @@ public sealed class PlaylistCurator
     /// </summary>
     private async Task<bool> DescribeOneAsync(
         Playlist playlist,
+        User user,
         string system,
         CancellationToken cancellationToken)
     {
-        var children = playlist.GetLinkedChildren();
+        // 12.0 keeps playlist contents in the database rather than on the item, so the
+        // track list is read through the user-aware GetChildren path. GetLinkedChildren
+        // no longer reflects what is actually on a playlist.
+        var children = playlist.GetChildren(user, false, null);
         if (children.Count < 5)
         {
             return false;
