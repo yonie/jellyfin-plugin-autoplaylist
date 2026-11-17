@@ -87,7 +87,7 @@ jobs:
       - name: Update the manifest on the default branch
         run: |
           git fetch --quiet origin "$DEFAULT_BRANCH"
-          git checkout -B "$DEFAULT_BRANCH" "origin/$DEFAULT_BRANCH"
+          git checkout -f -B "$DEFAULT_BRANCH" "origin/$DEFAULT_BRANCH"
           python3 .github/scripts/package.py \
             --manifest-only \
             --version "${{ steps.version.outputs.version }}" \
